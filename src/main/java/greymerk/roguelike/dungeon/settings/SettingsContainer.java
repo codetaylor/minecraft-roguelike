@@ -25,12 +25,17 @@ import greymerk.roguelike.dungeon.settings.builtin.SettingsJungleTheme;
 import greymerk.roguelike.dungeon.settings.builtin.SettingsMesaTheme;
 import greymerk.roguelike.dungeon.settings.builtin.SettingsMountainTheme;
 import greymerk.roguelike.dungeon.settings.builtin.SettingsSwampTheme;
+import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SettingsContainer implements ISettingsContainer{
 
 	public static final String DEFAULT_NAMESPACE = "default";
 	public static final String BUILTIN_NAMESPACE = "builtin";
-	
+
+	private static final Logger LOGGER = LogManager.getLogger(SettingsContainer.class);
+
 	private Map<String, Map<String, DungeonSettings>> settingsByNamespace;
 	
 	public SettingsContainer(){
@@ -60,7 +65,8 @@ public class SettingsContainer implements ISettingsContainer{
 			try{
 				toAdd = parseFile(files.get(name));
 			} catch (Exception e){
-				throw new Exception("Error in: " + name + " : " + e.getMessage());
+				LOGGER.error("Error in: " + name, e);
+				throw new Exception("Error in: " + name + " : " + e.getMessage() + ", see log for details");
 			}
 			this.put(toAdd);
 		}
