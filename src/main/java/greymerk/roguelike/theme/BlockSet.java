@@ -1,5 +1,6 @@
 package greymerk.roguelike.theme;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import greymerk.roguelike.worldgen.BlockProvider;
@@ -92,7 +93,10 @@ public class BlockSet implements IBlockSet {
 		}
 		
 		if(json.has("door")){
-			this.door = new Door(json.get("door"));
+			JsonObject door = json.get("door").getAsJsonObject();
+			this.door = door.has("data")
+					? new Door(new MetaBlock(door.get("data").getAsJsonObject()))
+					: new Door(new MetaBlock(door));
 		} else if(base != null){
 			this.door = base.getDoor();
 		}
