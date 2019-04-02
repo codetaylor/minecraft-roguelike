@@ -1,8 +1,6 @@
 package greymerk.roguelike.worldgen.spawners;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -55,24 +53,50 @@ public class SpawnerSettings {
 	}
 	
 	public void add(JsonObject entry) throws Exception{
-		if(!entry.has("type")) throw new Exception("Spawners entry missing type");
-		
-		String typeName = entry.get("type").getAsString().toUpperCase();
-		Spawner type = Spawner.valueOf(typeName);
-		if(type == null) throw new Exception("no such Spawner type: " + entry.get("type").getAsString());
-		
+
+		List<Spawner> spawnerTypeList = new ArrayList<>(Spawner.values().length);
+
+		if(!entry.has("type")) {
+			// If the spawner object is missing a type element, add to all types...
+			spawnerTypeList.addAll(Arrays.asList(Spawner.values()));
+		} else {
+			// Else, gather types from array or string...
+			JsonElement typeElement = entry.get("type");
+			if (typeElement.isJsonArray()) {
+				for (JsonElement jsonElement : typeElement.getAsJsonArray()) {
+					String typeName = jsonElement.getAsString().toUpperCase();
+					try {
+						Spawner type = Spawner.valueOf(typeName);
+						spawnerTypeList.add(type);
+					} catch (Exception e) {
+						throw new Exception("No such Spawner type: " + typeName, e);
+					}
+				}
+			} else {
+				String typeName = typeElement.getAsString().toUpperCase();
+				try {
+					Spawner type = Spawner.valueOf(typeName);
+					spawnerTypeList.add(type);
+				} catch (Exception e) {
+					throw new Exception("No such Spawner type: " + typeElement.getAsString(), e);
+				}
+			}
+		}
+
 		JsonElement potentials = entry.get("potentials");
 		Spawnable spawn = new Spawnable(potentials);
 		
 		int weight = entry.has("weight") ? entry.get("weight").getAsInt() : 1;
-		
-		if(!this.spawners.containsKey(type)){
-			this.spawners.put(type, new WeightedRandomizer<Spawnable>());
+
+		// Add the spawner to all gathered types.
+		for (Spawner type : spawnerTypeList) {
+			if(!this.spawners.containsKey(type)){
+				this.spawners.put(type, new WeightedRandomizer<Spawnable>());
+			}
+
+			WeightedChoice<Spawnable> toAdd = new WeightedChoice<Spawnable>(spawn, weight);
+			this.spawners.get(type).add(toAdd);
 		}
-		
-		WeightedChoice<Spawnable> toAdd = new WeightedChoice<Spawnable>(spawn, weight);
-		
-		this.spawners.get(type).add(toAdd);
 	}
 
 	public void generate(IWorldEditor editor, Random rand, Coord cursor, Spawner type, int level){
